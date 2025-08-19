@@ -6,7 +6,7 @@ import { RequireRole } from '../../components/RequireRole';
 import Layout from '../../components/Layout';
 
 interface MenuItem { _id: string; name: string; price: number; category?: string; isAvailable: boolean }
-
+ 
 export default function AdminMenuPage() {
   const { token } = useAppSelector(s => s.auth);
   const [items, setItems] = useState<MenuItem[]>([]);
