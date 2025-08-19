@@ -11,14 +11,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await connectDb();
   if (req.method === 'POST') {
     const { tableSlug, items } = req.body || {};
-    const table = await Table.findOne({ slug: tableSlug });
+    const table = await (Table as any).findOne({ slug: tableSlug });
     if (!table) return res.status(400).json({ message: 'Invalid table' });
-    const menuItems = await MenuItem.find({ _id: { $in: items.map((i:any) => i.itemId) } });
+    const menuItems = await (MenuItem as any).find({ _id: { $in: items.map((i:any) => i.itemId) } });
     const orderItems = items.map((i:any) => {
       const mi = menuItems.find((m:any) => String(m._id) === i.itemId);
       return { item: i.itemId, nameSnapshot: mi?.name, priceSnapshot: mi?.price, quantity: i.quantity || 1, notes: i.notes || '' };
     });
-    const order = await Order.create({ table: table._id, items: orderItems });
+    const order = await (Order as any).create({ table: table._id, items: orderItems });
     // @ts-ignore
     order.recalculateTotals();
     await order.save();
@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const filter: any = {};
   if (role === 'KITCHEN') filter.status = { $in: ['NEW','ACCEPTED','IN_PROGRESS'] };
   if (role === 'DELIVERY') filter.status = 'COMPLETED';
-  const orders = await Order.find(filter).populate('table').sort({ createdAt: -1 });
+  const orders = await (Order as any).find(filter).populate('table').sort({ createdAt: -1 });
   return res.json(orders);
 }
 
