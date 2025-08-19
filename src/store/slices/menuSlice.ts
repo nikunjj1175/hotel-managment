@@ -7,6 +7,8 @@ export interface MenuItem {
   price: number;
   category?: string;
   isAvailable: boolean;
+  imageUrl?: string;
+  description?: string;
 }
 
 interface MenuState {
