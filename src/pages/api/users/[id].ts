@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await connectDb();
   await runMiddleware(req, res, requireAuth(['SUPER_ADMIN']));
   if (req.method === 'DELETE') {
-    await User.findByIdAndDelete(req.query.id as string);
+    await (User as any).findByIdAndDelete(req.query.id as string);
     return res.json({ ok: true });
   }
   return res.status(405).end();

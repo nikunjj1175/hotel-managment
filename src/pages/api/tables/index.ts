@@ -11,15 +11,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await connectDb();
   await runMiddleware(req, res, requireAuth(['SUPER_ADMIN','ADMIN']));
   if (req.method === 'GET') {
-    const tables = await Table.find().sort({ tableNumber: 1 });
+    const tables = await (Table as any).find().sort({ tableNumber: 1 });
     return res.json(tables);
   }
   if (req.method === 'POST') {
-    const table = await Table.create(req.body);
+    const table = await (Table as any).create(req.body);
     return res.json(table);
   }
   if (req.method === 'PUT') {
-    const updated = await Table.findByIdAndUpdate((req.query as any).id, req.body, { new: true });
+    const updated = await (Table as any).findByIdAndUpdate((req.query as any).id, req.body, { new: true });
     return res.json(updated);
   }
   return res.status(405).end();

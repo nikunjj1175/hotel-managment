@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await connectDb();
   await runMiddleware(req, res, requireAuth(['SUPER_ADMIN','ADMIN']));
   const { method, amount, reference } = req.body || {};
-  const order = await Order.findById(req.query.id as string);
+  const order = await (Order as any).findById(req.query.id as string);
   if (!order) return res.status(404).json({ message: 'Not found' });
   // @ts-ignore
   order.payments.push({ method, amount, reference });

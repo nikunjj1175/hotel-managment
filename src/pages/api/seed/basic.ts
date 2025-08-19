@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await connectDb();
   const tables = Array.from({ length: 8 }).map((_, i) => ({ tableNumber: i + 1, slug: `table-${i + 1}` }));
   for (const t of tables) {
-    await Table.updateOne({ tableNumber: t.tableNumber }, { $setOnInsert: t }, { upsert: true });
+    await (Table as any).updateOne({ tableNumber: t.tableNumber }, { $setOnInsert: t }, { upsert: true });
   }
   const menu = [
     { name: 'Margherita Pizza', price: 250, category: 'Pizza' },
@@ -16,10 +16,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     { name: 'Chai', price: 30, category: 'Beverage' }
   ];
   for (const m of menu) {
-    await MenuItem.updateOne({ name: m.name }, { $setOnInsert: { ...m, isAvailable: true } }, { upsert: true });
+    await (MenuItem as any).updateOne({ name: m.name }, { $setOnInsert: { ...m, isAvailable: true } }, { upsert: true });
   }
-  const tblCount = await Table.countDocuments();
-  const menuCount = await MenuItem.countDocuments();
+  const tblCount = await (Table as any).countDocuments();
+  const menuCount = await (MenuItem as any).countDocuments();
   res.json({ tables: tblCount, menu: menuCount });
 }
 

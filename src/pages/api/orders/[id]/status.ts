@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await connectDb();
   await runMiddleware(req, res, requireAuth(['SUPER_ADMIN','ADMIN','KITCHEN','DELIVERY']));
   const { status } = req.body || {};
-  const order = await Order.findById(req.query.id as string).populate('table');
+  const order = await (Order as any).findById(req.query.id as string).populate('table');
   if (!order) return res.status(404).json({ message: 'Not found' });
   const allowedNext: any = {
     NEW: ['ACCEPTED','IN_PROGRESS','COMPLETED','CANCELLED'],
