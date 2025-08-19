@@ -13,6 +13,7 @@ interface MenuItem {
   category?: string; 
   isAvailable: boolean;
   imageUrl?: string;
+  cloudinaryPublicId?: string;
   description?: string;
 }
  
@@ -25,7 +26,8 @@ export default function AdminMenuPage() {
     category: '', 
     description: '',
     isAvailable: true,
-    imageUrl: ''
+    imageUrl: '',
+    cloudinaryPublicId: ''
   });
 
 
@@ -39,12 +41,12 @@ export default function AdminMenuPage() {
     setItems(res.data);
   };
 
-  const handleImageUpload = (imageUrl: string) => {
-    setForm(prev => ({ ...prev, imageUrl }));
+  const handleImageUpload = (imageUrl: string, cloudinaryPublicId?: string) => {
+    setForm(prev => ({ ...prev, imageUrl, cloudinaryPublicId: cloudinaryPublicId || '' }));
   };
 
   const handleImageRemove = () => {
-    setForm(prev => ({ ...prev, imageUrl: '' }));
+    setForm(prev => ({ ...prev, imageUrl: '', cloudinaryPublicId: '' }));
   };
 
   const createItem = async () => {
@@ -57,7 +59,7 @@ export default function AdminMenuPage() {
       axios.post(`/api/menu`, form),
       { loading: 'Creating...', success: 'Item created', error: 'Failed to create' }
     );
-    setForm({ name: '', price: 0, category: '', description: '', isAvailable: true, imageUrl: '' });
+    setForm({ name: '', price: 0, category: '', description: '', isAvailable: true, imageUrl: '', cloudinaryPublicId: '' });
     load();
   };
 
@@ -94,7 +96,9 @@ export default function AdminMenuPage() {
               <ImageUpload
                 onImageUpload={handleImageUpload}
                 currentImageUrl={form.imageUrl}
+                currentCloudinaryPublicId={form.cloudinaryPublicId}
                 onImageRemove={handleImageRemove}
+                menuName={form.name}
               />
 
               {/* Form Fields */}

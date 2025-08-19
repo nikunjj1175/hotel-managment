@@ -3,17 +3,21 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 interface ImageUploadProps {
-  onImageUpload: (imageUrl: string) => void;
+  onImageUpload: (imageUrl: string, cloudinaryPublicId?: string) => void;
   currentImageUrl?: string;
+  currentCloudinaryPublicId?: string;
   onImageRemove?: () => void;
   className?: string;
+  menuName?: string;
 }
 
 export default function ImageUpload({ 
   onImageUpload, 
   currentImageUrl, 
+  currentCloudinaryPublicId,
   onImageRemove,
-  className = '' 
+  className = '',
+  menuName = ''
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +37,11 @@ export default function ImageUpload({
       return;
     }
 
+    if (!menuName.trim()) {
+      toast.error('Menu name is required for image upload');
+      return;
+    }
+
     setUploading(true);
     try {
       const reader = new FileReader();
@@ -41,11 +50,12 @@ export default function ImageUpload({
         
         const response = await axios.post('/api/upload-image', {
           imageData,
-          fileName: file.name
+          fileName: file.name,
+          menuName: menuName.trim()
         });
 
         if (response.data.success) {
-          onImageUpload(response.data.imageUrl);
+          onImageUpload(response.data.imageUrl, response.data.cloudinaryPublicId);
           toast.success('Image uploaded successfully');
         } else {
           toast.error('Failed to upload image');
