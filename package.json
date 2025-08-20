@@ -27,6 +27,7 @@
     "@heroicons/react": "^2.1.5",
     "react-hot-toast": "^2.4.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^11.2.6",
     "cookie": "^0.6.0"
   },
   "devDependencies": {

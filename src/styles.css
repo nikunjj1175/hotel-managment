@@ -57,3 +57,35 @@ input, select { @apply px-3 py-2 border rounded focus:outline-none focus:ring-2 
 a { @apply text-blue-700 hover:underline; }
 
 
+/* Subtle fade-up animation for tiles */
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp .5s ease forwards;
+}
+
+/* Animated active underline for navbar */
+@keyframes slideGrad {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+.active-underline {
+  background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399);
+  background-size: 200% 100%;
+  animation: slideGrad 2s linear infinite;
+}
+
+/* Text glow helper */
+.text-glow {
+  text-shadow: 0 2px 12px rgba(59,130,246,.35);
+}
+
+/* Shake animation for errors */
+@keyframes gentleShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+.animate-shake { animation: gentleShake 320ms ease-in-out; }
+
+
