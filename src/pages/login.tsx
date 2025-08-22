@@ -39,25 +39,25 @@ export default function Login() {
               <div className="grid gap-1">
                 <label className="text-sm text-gray-700">Email</label>
                 <div className="relative">
-                  <EnvelopeIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <EnvelopeIcon className="h-5 w-5 text-blue-500 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
                   <input
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="email"
-                    className="pl-10 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/70 transition-shadow shadow-sm"
+                    className="pl-10 w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:border-gray-400"
                   />
                 </div>
               </div>
               <div className="grid gap-1">
                 <label className="text-sm text-gray-700">Password</label>
                 <div className="relative">
-                  <LockClosedIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <LockClosedIcon className="h-5 w-5 text-emerald-500 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
                   <input
                     type="password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="password"
-                    className="pl-10 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/70 transition-shadow shadow-sm"
+                    className="pl-10 w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 shadow-sm hover:border-gray-400"
                   />
                 </div>
               </div>

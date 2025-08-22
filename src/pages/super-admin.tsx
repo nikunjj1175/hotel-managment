@@ -57,41 +57,41 @@ export default function SuperAdminPage() {
             <div className="rounded-2xl bg-white/80 backdrop-blur-sm p-6 shadow-[0_10px_30px_-10px_rgba(2,6,23,0.15)] ring-1 ring-black/5">
               <div className="flex items-center gap-3 mb-4">
                 <ShieldCheckIcon className="h-6 w-6 text-blue-600" />
-                <h3 className="font-semibold text-lg">Create User</h3>
+                <h3 className="font-semibold text-lg text-slate-800">Create User</h3>
               </div>
               <div className="grid gap-3 max-w-md">
                 <div className="relative">
-                  <UserIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <UserIcon className="h-5 w-5 text-blue-500 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
                   <input
                     placeholder="Name"
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
-                    className="pl-10 w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/70 transition-shadow shadow-sm"
+                    className="pl-10 w-full px-3 py-2 rounded-xl bg-white/90 text-slate-900 placeholder-gray-500 ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:ring-gray-400"
                   />
                 </div>
                 <div className="relative">
-                  <EnvelopeIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <EnvelopeIcon className="h-5 w-5 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
                   <input
                     placeholder="Email"
                     value={form.email}
                     onChange={e => setForm({ ...form, email: e.target.value })}
-                    className="pl-10 w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/70 transition-shadow shadow-sm"
+                    className="pl-10 w-full px-3 py-2 rounded-xl bg-white/90 text-slate-900 placeholder-gray-500 ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 shadow-sm hover:ring-gray-400"
                   />
                 </div>
                 <div className="relative">
-                  <LockClosedIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <LockClosedIcon className="h-5 w-5 text-emerald-500 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
                   <input
                     placeholder="Password"
                     type="password"
                     value={form.password}
                     onChange={e => setForm({ ...form, password: e.target.value })}
-                    className="pl-10 w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/70 transition-shadow shadow-sm"
+                    className="pl-10 w-full px-3 py-2 rounded-xl bg-white/90 text-slate-900 placeholder-gray-500 ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 shadow-sm hover:ring-gray-400"
                   />
                 </div>
                 <select
                   value={form.role}
                   onChange={e => setForm({ ...form, role: e.target.value as Role })}
-                  className="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/70 bg-white shadow-sm"
+                  className="w-full px-3 py-2 rounded-xl bg-white/90 text-slate-900 ring-1 ring-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:ring-gray-400 cursor-pointer"
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="KITCHEN">Kitchen</option>
@@ -100,7 +100,7 @@ export default function SuperAdminPage() {
                 </select>
                 <button
                   onClick={createUser}
-                  className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.01] active:scale-[.99]"
+                  className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.01] active:scale-[.99] font-medium"
                 >
                   Create
                   <ArrowRightIcon className="h-5 w-5" />
@@ -112,7 +112,7 @@ export default function SuperAdminPage() {
 
         {/* Users Table */}
         <div className="animate-fade-up" style={{ animationDelay: '120ms' }}>
-          <h3 className="font-semibold text-lg mb-3">Users</h3>
+          <h3 className="font-semibold text-lg mb-3 text-gray-800">Users</h3>
           {error && <p className="text-red-600 mb-2 animate-shake">{error}</p>}
           <div className="rounded-2xl overflow-hidden bg-white/80 backdrop-blur ring-1 ring-black/5 shadow-[0_10px_30px_-10px_rgba(2,6,23,0.15)]">
             <table className="min-w-full divide-y divide-gray-200">

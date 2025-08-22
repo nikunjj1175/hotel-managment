@@ -5,6 +5,10 @@ import { store } from '../store';
 import '../styles.css';
 import { Toaster } from 'react-hot-toast';
 import { setAuth, setHydrated } from '../store/slices/authSlice';
+import { ToastProvider } from '../components/Toast';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'] });
 
 function Boot() {
   useEffect(() => {
@@ -52,9 +56,13 @@ function Boot() {
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <Provider store={store}>
-      <Boot />
-      <Toaster position="top-right" />
-      <Component {...pageProps} />
+      <ToastProvider>
+        <div className={`${inter.className} antialiased`}>
+          <Boot />
+          <Toaster position="top-right" />
+          <Component {...pageProps} />
+        </div>
+      </ToastProvider>
     </Provider>
   );
 }

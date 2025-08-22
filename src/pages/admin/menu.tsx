@@ -18,8 +18,9 @@ interface MenuItem {
 }
  
 export default function AdminMenuPage() {
-  const { token } = useAppSelector(s => s.auth);
+  const { token, hydrated } = useAppSelector(s => s.auth);
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ 
     name: '', 
     price: 0, 
@@ -30,15 +31,34 @@ export default function AdminMenuPage() {
     cloudinaryPublicId: ''
   });
 
-
   useEffect(() => {
-    if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    load();
-  }, [token]);
+    if (hydrated && token) {
+      // Set the authorization header
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      load();
+    }
+  }, [hydrated, token]);
 
   const load = async () => {
-    const res = await axios.get(`/api/menu`);
-    setItems(res.data);
+    if (!token) {
+      toast.error('Authentication required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await axios.get(`/api/menu`);
+      setItems(res.data);
+    } catch (err: any) {
+      console.error('Error loading menu items:', err);
+      if (err.response?.status === 401) {
+        toast.error('Authentication failed. Please login again.');
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to load menu items');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageUpload = (imageUrl: string, cloudinaryPublicId?: string) => {
@@ -50,34 +70,101 @@ export default function AdminMenuPage() {
   };
 
   const createItem = async () => {
+    if (!token) {
+      toast.error('Authentication required');
+      return;
+    }
+
     if (!form.name || form.price <= 0) {
       toast.error('Please fill all required fields');
       return;
     }
 
-    await toast.promise(
-      axios.post(`/api/menu`, form),
-      { loading: 'Creating...', success: 'Item created', error: 'Failed to create' }
-    );
-    setForm({ name: '', price: 0, category: '', description: '', isAvailable: true, imageUrl: '', cloudinaryPublicId: '' });
-    load();
+    try {
+      await axios.post(`/api/menu`, form);
+      toast.success('Item created successfully');
+      setForm({ name: '', price: 0, category: '', description: '', isAvailable: true, imageUrl: '', cloudinaryPublicId: '' });
+      load();
+    } catch (err: any) {
+      console.error('Error creating menu item:', err);
+      if (err.response?.status === 401) {
+        toast.error('Authentication failed. Please login again.');
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to create menu item');
+      }
+    }
   };
 
   const updateItem = async (id: string, payload: Partial<MenuItem>) => {
-    await toast.promise(
-      axios.put(`/api/menu/${id}`, payload),
-      { loading: 'Updating...', success: 'Item updated', error: 'Failed to update' }
-    );
-    load();
+    if (!token) {
+      toast.error('Authentication required');
+      return;
+    }
+
+    try {
+      await axios.put(`/api/menu/${id}`, payload);
+      toast.success('Item updated successfully');
+      load();
+    } catch (err: any) {
+      console.error('Error updating menu item:', err);
+      if (err.response?.status === 401) {
+        toast.error('Authentication failed. Please login again.');
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to update menu item');
+      }
+    }
   };
 
   const removeItem = async (id: string) => {
-    await toast.promise(
-      axios.delete(`/api/menu/${id}`),
-      { loading: 'Deleting...', success: 'Item deleted', error: 'Failed to delete' }
-    );
-    load();
+    if (!token) {
+      toast.error('Authentication required');
+      return;
+    }
+
+    try {
+      await axios.delete(`/api/menu/${id}`);
+      toast.success('Item deleted successfully');
+      load();
+    } catch (err: any) {
+      console.error('Error deleting menu item:', err);
+      if (err.response?.status === 401) {
+        toast.error('Authentication failed. Please login again.');
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to delete menu item');
+      }
+    }
   };
+
+  // Don't render until auth is hydrated
+  if (!hydrated) {
+    return (
+      <Layout title="Manage Menu">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show error if no token
+  if (!token) {
+    return (
+      <Layout title="Manage Menu">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-red-600 text-xl mb-4">🔒 Authentication Required</div>
+            <p className="text-gray-600 mb-4">You need to be logged in to access this page.</p>
+            <a href="/login" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              Go to Login
+            </a>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <RequireRole allow={["ADMIN","SUPER_ADMIN"] as any}>
@@ -166,9 +253,10 @@ export default function AdminMenuPage() {
               <div className="flex justify-end">
                 <button 
                   onClick={createItem}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+                  disabled={loading}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Menu Item
+                  {loading ? 'Creating...' : 'Create Menu Item'}
                 </button>
               </div>
             </div>
@@ -177,12 +265,28 @@ export default function AdminMenuPage() {
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold text-gray-900">Menu Items ({items.length})</h3>
-              <div className="text-sm text-gray-500">
-                {items.filter(item => item.isAvailable).length} available
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-500">
+                  {items.filter(item => item.isAvailable).length} available
+                </div>
+                <button 
+                  onClick={load} 
+                  disabled={loading}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                >
+                  {loading ? 'Loading...' : 'Refresh'}
+                </button>
               </div>
             </div>
             
-            {items.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center min-h-[200px]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-gray-600">Loading menu items...</p>
+                </div>
+              </div>
+            ) : items.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <div className="text-gray-400 text-6xl mb-4">🍽️</div>
                 <h4 className="text-lg font-medium text-gray-900 mb-2">No menu items yet</h4>
