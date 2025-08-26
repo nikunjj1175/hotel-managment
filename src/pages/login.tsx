@@ -16,10 +16,14 @@ export default function Login() {
     const res = await dispatch(login({ email, password }));
     if ((res as any).meta.requestStatus === 'fulfilled') {
       const role = (res as any).payload.user.role;
-      if (role === 'SUPER_ADMIN') router.push('/super-admin');
+      // Redirect based on role
+      if (role === 'SUPER_ADMIN') router.push('/super-admin-new');
+      else if (role === 'CAFE_ADMIN') router.push('/cafe-admin');
       else if (role === 'KITCHEN') router.push('/kitchen');
-      else if (role === 'DELIVERY') router.push('/delivery');
-      else router.push('/admin');
+      else if (role === 'WAITER') router.push('/waiter');
+      else if (role === 'MANAGER') router.push('/manager');
+      else if (role === 'CUSTOMER') router.push('/customer');
+      else router.push('/admin'); // Fallback for old roles
     }
   };
 
@@ -32,7 +36,12 @@ export default function Login() {
               <h2 className="inline-block text-3xl leading-[1.25] pb-0.5 font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-emerald-600 bg-clip-text text-transparent">
                 Login
               </h2>
-              <p className="mt-1 text-sm text-gray-500 leading-relaxed">Access your dashboard and continue managing orders.</p>
+              <p className="mt-1 text-sm text-gray-500 leading-relaxed">Access your dashboard and continue managing operations.</p>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-left">
+                <p className="text-xs font-semibold text-blue-800 mb-2">Demo Credentials:</p>
+                <p className="text-xs text-blue-700"><strong>Super Admin:</strong> admin@example.com / admin123</p>
+                <p className="text-xs text-blue-700"><strong>Cafe Admin:</strong> cafe@example.com / cafe123</p>
+              </div>
             </div>
 
             <form onSubmit={onSubmit} className="grid gap-4">

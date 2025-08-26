@@ -31,9 +31,8 @@ export default function AdminDashboard() {
       change: '+12%',
       changeType: 'positive',
       icon: UsersIcon,
-      color: 'from-blue-500 to-indigo-600',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600'
+      iconBg: 'bg-indigo-50',
+      iconClass: 'text-blue-500'
     },
     {
       title: 'Active Tables',
@@ -41,9 +40,8 @@ export default function AdminDashboard() {
       change: '+5%',
       changeType: 'positive',
       icon: TableCellsIcon,
-      color: 'from-green-500 to-emerald-600',
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-600'
+      iconBg: 'bg-emerald-50',
+      iconClass: 'text-emerald-500'
     },
     {
       title: 'Menu Items',
@@ -51,9 +49,8 @@ export default function AdminDashboard() {
       change: '+8%',
       changeType: 'positive',
       icon: ClipboardDocumentListIcon,
-      color: 'from-purple-500 to-pink-600',
-      bgColor: 'bg-purple-50',
-      iconColor: 'text-purple-600'
+      iconBg: 'bg-purple-50',
+      iconClass: 'text-violet-500'
     },
     {
       title: 'Orders Today',
@@ -61,9 +58,8 @@ export default function AdminDashboard() {
       change: '+23%',
       changeType: 'positive',
       icon: FireIcon,
-      color: 'from-orange-500 to-red-600',
-      bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600'
+      iconBg: 'bg-orange-50',
+      iconClass: 'text-orange-500'
     }
   ];
 
@@ -73,36 +69,32 @@ export default function AdminDashboard() {
       description: 'Create a new user account',
       icon: UsersIcon,
       href: '/super-admin',
-      color: 'from-blue-500 to-indigo-600',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600'
+      cardGradient: 'from-blue-100 via-indigo-100 to-purple-100',
+      iconClass: 'text-blue-600'
     },
     {
       title: 'Manage Tables',
       description: 'Configure table settings',
       icon: TableCellsIcon,
       href: '/admin/tables',
-      color: 'from-green-500 to-emerald-600',
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-600'
+      cardGradient: 'from-emerald-100 via-teal-100 to-cyan-100',
+      iconClass: 'text-emerald-600'
     },
     {
       title: 'Update Menu',
       description: 'Add or modify menu items',
       icon: ClipboardDocumentListIcon,
       href: '/admin/menu',
-      color: 'from-purple-500 to-pink-600',
-      bgColor: 'bg-purple-50',
-      iconColor: 'text-purple-600'
+      cardGradient: 'from-violet-100 via-fuchsia-100 to-pink-100',
+      iconClass: 'text-violet-600'
     },
     {
       title: 'View Orders',
       description: 'Monitor kitchen orders',
       icon: FireIcon,
       href: '/kitchen',
-      color: 'from-orange-500 to-red-600',
-      bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600'
+      cardGradient: 'from-orange-100 via-amber-100 to-rose-100',
+      iconClass: 'text-orange-600'
     }
   ];
 
@@ -159,28 +151,21 @@ export default function AdminDashboard() {
     <Layout title="Admin Dashboard">
       {/* Welcome Section */}
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-8 text-white relative overflow-hidden">
+        <div className="rounded-3xl p-8 text-gray-900 relative overflow-hidden bg-gradient-to-r from-sky-50 via-indigo-50 to-violet-50 border border-slate-200">
           <div className="relative z-10">
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="text-3xl font-bold mb-2 text-[#111827]">
               Welcome back, {user?.name}! 👋
             </h1>
-            <p className="text-blue-100 text-lg">
+            <p className="text-[#6b7280] text-lg">
               Here's what's happening with your hotel today
             </p>
           </div>
-          
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-32 translate-x-32" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-16 -translate-x-16" />
-          </div>
-          
-          {/* Floating Icons */}
-          <div className="absolute top-4 right-8 opacity-20">
-            <ChartBarIcon className="w-16 h-16 animate-bounce" style={{ animationDelay: '0s' }} />
-          </div>
-          <div className="absolute bottom-4 right-4 opacity-20">
-            <ClockIcon className="w-12 h-12 animate-bounce" style={{ animationDelay: '0.5s' }} />
+          {/* Minimal illustration */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -right-10 -bottom-8 h-64 w-64 rounded-full bg-gradient-to-br from-indigo-200/40 to-purple-200/40 blur-2xl" />
+            <div className="absolute right-8 bottom-8 opacity-20">
+              <ChartBarIcon className="w-14 h-14 text-indigo-400" />
+            </div>
           </div>
         </div>
       </div>
@@ -190,24 +175,24 @@ export default function AdminDashboard() {
         {stats.map((stat, index) => (
           <div
             key={stat.title}
-            className={`${stat.bgColor} rounded-2xl p-6 border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group`}
+            className={`bg-white rounded-2xl p-6 border border-slate-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 group`}
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl bg-gradient-to-r ${stat.color} bg-opacity-10`}>
-                <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+              <div className={`h-10 w-10 rounded-full grid place-items-center ring-1 ring-slate-200 ${stat.iconBg}`}>
+                <stat.icon className={`w-6 h-6 ${stat.iconClass}`} />
               </div>
               <span className={`text-sm font-medium ${
                 stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
               }`}>
                 {stat.change}
               </span>
+            </div>
+            <h3 className="text-2xl font-bold text-[#111827] mb-1">{stat.value}</h3>
+            <p className="text-[#6b7280] text-sm">{stat.title}</p>
+          </div>
+        ))}
       </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-            <p className="text-gray-600 text-sm">{stat.title}</p>
-            </div>
-              ))}
-            </div>
 
       {/* Quick Actions */}
       <div className="mb-8">
@@ -216,25 +201,29 @@ export default function AdminDashboard() {
           Quick Actions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {quickActions.map((action, index) => (
-            <div
-              key={action.title}
-              className={`${action.bgColor} rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group cursor-pointer`}
-              style={{ animationDelay: `${index * 100}ms` }}
-              onClick={() => handleQuickAction(action)}
-            >
-              <div className={`p-3 rounded-xl bg-gradient-to-r ${action.color} bg-opacity-10 mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                <action.icon className={`w-6 h-6 ${action.iconColor}`} />
+          {quickActions.map((action, index) => {
+            const Icon = action.icon;
+            return (
+              <div
+                key={action.title}
+                className={`rounded-2xl p-5 md:p-6 bg-gradient-to-r ${action.cardGradient} border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 hover:scale-[1.01] cursor-pointer`}
+                style={{ animationDelay: `${index * 100}ms` }}
+                onClick={() => handleQuickAction(action)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white grid place-items-center ring-1 ring-slate-200">
+                    <Icon className={`w-6 h-6 md:w-7 md:h-7 ${action.iconClass}`} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg md:text-xl font-semibold text-[#111827]">{action.title}</h3>
+                    <p className="text-sm md:text-[15px] text-[#6b7280] mt-0.5">{action.description}</p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{action.title}</h3>
-              <p className="text-gray-600 text-sm">{action.description}</p>
-              
-              {/* Hover Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-            </div>
-          ))}
-              </div>
-            </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Recent Activity */}
       <div className="mb-8">

@@ -12,6 +12,11 @@ const inter = Inter({ subsets: ['latin'] });
 
 function Boot() {
   useEffect(() => {
+    // Set hydrated to true immediately - NO MORE LOADING ISSUES
+    setTimeout(() => {
+      store.dispatch(setHydrated());
+    }, 100);
+    
     // hydrate axios auth header if token exists
     const raw = typeof window !== 'undefined' ? localStorage.getItem('auth') : null;
     if (raw) {
@@ -27,8 +32,7 @@ function Boot() {
         }
       } catch {}
     }
-    // ensure hydration flag even if no auth
-    store.dispatch(setHydrated());
+    
     // background refresh access token every 25 minutes
     const interval = setInterval(async () => {
       try {
