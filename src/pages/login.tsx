@@ -1,8 +1,9 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
 import { login } from '../store/slices/authSlice';
 import { useRouter } from 'next/router';
 import { EnvelopeIcon, LockClosedIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { Role, getPortalPath } from '../utils/roles';
 
 export default function Login() {
   const dispatch = useAppDispatch();
@@ -10,29 +11,37 @@ export default function Login() {
   const { loading, error, user } = useAppSelector(s => s.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const target = useMemo(() => (router.query.target as string) as Role | undefined, [router.query.target]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const res = await dispatch(login({ email, password }));
     if ((res as any).meta.requestStatus === 'fulfilled') {
-      const role = (res as any).payload.user.role;
-      if (role === 'SUPER_ADMIN') router.push('/super-admin');
-      else if (role === 'KITCHEN') router.push('/kitchen');
-      else if (role === 'DELIVERY') router.push('/delivery');
-      else router.push('/admin');
+      // After successful login, always go to cards screen
+      router.push('/');
     }
   };
 
   return (
-    <div className="min-h-screen grid place-items-center px-4 py-12">
+    <div className="min-h-screen grid place-items-center px-4 py-12" style={{ background: '#F6F9FC' }}>
       <div className="w-full max-w-md animate-fade-up" style={{ animationDelay: '60ms' }}>
         <div className="p-[2px] rounded-3xl bg-gradient-to-br from-blue-500/20 via-indigo-500/15 to-emerald-500/20 shadow-lg">
           <div className="rounded-3xl bg-white/85 backdrop-blur-sm p-8 ring-1 ring-black/5">
             <div className="text-center mb-6">
-              <h2 className="inline-block text-3xl leading-[1.25] pb-0.5 font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-emerald-600 bg-clip-text text-transparent">
+              <h2
+                className="inline-block text-3xl leading-[1.25] pb-0.5 font-bold bg-clip-text text-transparent"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(90deg, rgba(250,204,21,0.6), rgba(52,211,153,0.6), rgba(244,114,182,0.6), rgba(56,189,248,0.6))'
+                }}
+              >
                 Login
               </h2>
-              <p className="mt-1 text-sm text-gray-500 leading-relaxed">Access your dashboard and continue managing orders.</p>
+              <p className="mt-1 text-sm text-gray-500 leading-relaxed">Access your dashboard and continue managing operations.</p>
+              {target && (
+                <p className="mt-2 text-xs text-gray-600">You are logging in for <strong>{target.replace('_',' ')}</strong> access.</p>
+              )}
+              
             </div>
 
             <form onSubmit={onSubmit} className="grid gap-4">
@@ -64,7 +73,14 @@ export default function Login() {
               <button
                 disabled={loading}
                 type="submit"
-                className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 shadow-sm hover:shadow-md transition-all duration-300 hover:from-blue-600 hover:via-indigo-600 hover:to-green-600 active:scale-[.99] disabled:opacity-60"
+                className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-white font-semibold shadow-sm transition-colors duration-200 active:scale-[.99] disabled:opacity-60"
+                style={{ backgroundColor: '#9DB7F9' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#8EA9F3';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#9DB7F9';
+                }}
               >
                 {loading ? 'Logging in…' : 'Login'}
                 <ArrowRightIcon className="h-5 w-5" />

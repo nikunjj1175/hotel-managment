@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useAppSelector, useAppDispatch } from '../store';
+import { useState, useEffect } from 'react';
+import { useAppSelector } from '../store';
 import { RequireRole } from '../components/RequireRole';
 import Layout from '../components/Layout';
+import { useSocket } from '../hooks/useSocket';
 import { 
   BuildingStorefrontIcon, 
   UserPlusIcon, 
@@ -13,13 +14,8 @@ import {
   TrashIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ExclamationTriangleIcon,
-  CurrencyDollarIcon,
-  UsersIcon,
-  TableCellsIcon,
-  ClockIcon
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
-import { createCafe, createCafeAdmin } from '../store/slices/authSlice';
 import { useToast } from '../components/Toast';
 
 interface Cafe {
@@ -75,16 +71,10 @@ const subscriptionPlans = [
 ];
 
 export default function SuperAdminPage() {
-  const dispatch = useAppDispatch();
-  const { user, loading, hydrated } = useAppSelector(s => s.auth);
+  const { user, hydrated } = useAppSelector(s => s.auth);
   const { success, error: toastError, warning, info } = useToast();
-
-  // NO MORE LOADING CHECKS - UI SHOWS IMMEDIATELY
-
   const [cafes, setCafes] = useState<Cafe[]>([]);
   const [showCreateCafe, setShowCreateCafe] = useState(false);
-  const [showCreateAdmin, setShowCreateAdmin] = useState(false);
-  const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [form, setForm] = useState({
     name: '',
     address: '',
@@ -97,21 +87,61 @@ export default function SuperAdminPage() {
       managerEnabled: true
     }
   });
-  const [adminForm, setAdminForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    cafeId: ''
-  });
+  const socket = useSocket();
+
+  // NO MORE LOADING CHECKS - UI SHOWS IMMEDIATELY
+
+  // Debug info
+  console.log('User authenticated:', user);
+  console.log('User role:', user?.role);
+  console.log('Cafes loaded:', cafes.length);
 
   useEffect(() => {
     loadCafes();
-  }, []);
+    
+    // Socket.IO event listeners for real-time updates
+    if (socket) {
+      socket.on('cafe:created', (newCafe: any) => {
+        setCafes(prev => [newCafe, ...prev]);
+        success('Cafe Created', `New cafe "${newCafe.name}" has been created`, 4000);
+      });
+
+      socket.on('cafe:updated', (updatedCafe: any) => {
+        setCafes(prev => prev.map(cafe => 
+          cafe._id === updatedCafe._id ? updatedCafe : cafe
+        ));
+        info('Cafe Updated', `Cafe "${updatedCafe.name}" has been updated`, 3000);
+      });
+
+      socket.on('cafe:subscription_expiring', (cafeAlert: any) => {
+        warning('Subscription Alert', `Cafe "${cafeAlert.name}" subscription expires in ${cafeAlert.daysLeft} days`, 5000);
+      });
+
+      socket.on('system:alert', (systemAlert: any) => {
+        warning('System Alert', systemAlert.message, 5000);
+      });
+
+      // Join super admin room for real-time updates
+      socket.emit('join:super_admin');
+    }
+
+    // Refresh data every 5 minutes
+    const interval = setInterval(loadCafes, 300000);
+    return () => {
+      clearInterval(interval);
+      if (socket) {
+        socket.off('cafe:created');
+        socket.off('cafe:updated');
+        socket.off('cafe:subscription_expiring');
+        socket.off('system:alert');
+        socket.emit('leave:super_admin');
+      }
+    };
+  }, [socket]);
 
   const loadCafes = async () => {
     try {
-      // In a real app, this would be an API call
-      // For now, using mock data
+      // Mock data for demonstration
       const mockCafes: Cafe[] = [
         {
           _id: '1',
@@ -146,7 +176,15 @@ export default function SuperAdminPage() {
 
   const handleCreateCafe = async () => {
     try {
-      await dispatch(createCafe(form)).unwrap();
+      // Mock API call
+      const newCafe: Cafe = {
+        _id: Date.now().toString(),
+        ...form,
+        status: 'ACTIVE',
+        paymentStatus: 'ACTIVE',
+        createdAt: new Date().toISOString()
+      };
+      setCafes([...cafes, newCafe]);
       success('Cafe Created', 'Cafe has been created successfully!', 3000);
       setShowCreateCafe(false);
       setForm({
@@ -157,20 +195,8 @@ export default function SuperAdminPage() {
         subscriptionPlan: subscriptionPlans[0],
         config: { kitchenEnabled: true, waiterEnabled: true, managerEnabled: true }
       });
-      loadCafes();
     } catch (err: any) {
       toastError('Error', err.message || 'Failed to create cafe', 4000);
-    }
-  };
-
-  const handleCreateAdmin = async () => {
-    try {
-      await dispatch(createCafeAdmin(adminForm)).unwrap();
-      success('Admin Created', 'Cafe admin has been created successfully!', 3000);
-      setShowCreateAdmin(false);
-      setAdminForm({ name: '', email: '', password: '', cafeId: '' });
-    } catch (err: any) {
-      toastError('Error', err.message || 'Failed to create admin', 4000);
     }
   };
 
@@ -236,14 +262,14 @@ export default function SuperAdminPage() {
   ];
 
   return (
-    <RequireRole allow={['SUPER_ADMIN']}>
-      <Layout title="Super Admin Dashboard">
+    <Layout title="Super Admin Dashboard">
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="rounded-3xl p-8 text-gray-800 relative overflow-hidden bg-gradient-to-r from-yellow-50 via-emerald-50 to-sky-50 border border-gray-200">
             <div className="relative z-10">
               <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name}! 👋</h1>
               <p className="text-gray-600 text-lg">Manage your cafe network and system operations</p>
+              <p className="text-gray-500 text-sm mt-2">Role: {user?.role} | ID: {user?._id} | Status: {user?.status}</p>
             </div>
           </div>
         </div>
@@ -259,7 +285,7 @@ export default function SuperAdminPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 rounded-xl bg-white ring-1 ring-gray-200">
                   <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
-      </div>
+                </div>
                 <span className={`text-sm font-medium ${
                   stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
                 }`}>
@@ -268,9 +294,9 @@ export default function SuperAdminPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
               <p className="text-gray-600 text-sm">{stat.title}</p>
-                </div>
+            </div>
           ))}
-                </div>
+        </div>
 
         {/* Quick Actions */}
         <div className="mb-8">
@@ -285,7 +311,7 @@ export default function SuperAdminPage() {
             >
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-blue-100 flex items-center justify-center">
-                <PlusIcon className="w-6 h-6 text-blue-600" />
+                  <PlusIcon className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-[18px] font-semibold text-gray-900">Create New Cafe</h3>
@@ -295,7 +321,7 @@ export default function SuperAdminPage() {
             </button>
 
             <button
-              onClick={() => setShowCreateAdmin(true)}
+              onClick={() => info('Create Admin', 'Create cafe admin accounts', 2000)}
               className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md hover:scale-[1.01] transition-transform duration-200 group cursor-pointer text-left h-full min-h-[112px]"
             >
               <div className="flex items-center gap-4">
@@ -309,22 +335,22 @@ export default function SuperAdminPage() {
               </div>
             </button>
 
-                <button
+            <button
               onClick={() => info('Analytics', 'View detailed system analytics and reports', 2000)}
               className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md hover:scale-[1.01] transition-transform duration-200 group cursor-pointer text-left h-full min-h-[112px]"
             >
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-purple-100 flex items-center justify-center">
-                <ChartBarIcon className="w-6 h-6 text-purple-600" />
+                  <ChartBarIcon className="w-6 h-6 text-purple-600" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-[18px] font-semibold text-gray-900">View Analytics</h3>
                   <p className="text-sm text-gray-600 mt-1">Monitor system performance and cafe metrics</p>
                 </div>
               </div>
-                </button>
-              </div>
-            </div>
+            </button>
+          </div>
+        </div>
 
         {/* Cafes Management */}
         <div className="mb-8">
@@ -340,11 +366,11 @@ export default function SuperAdminPage() {
               <PlusIcon className="h-4 w-4" />
               Add Cafe
             </button>
-        </div>
+          </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cafe</th>
@@ -353,10 +379,10 @@ export default function SuperAdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Features</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {cafes.map((cafe) => (
+                  {cafes.map((cafe, idx) => (
                     <tr key={cafe._id} className="odd:bg-white even:bg-slate-50 hover:bg-slate-100 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -411,7 +437,7 @@ export default function SuperAdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
                           <button
-                            onClick={() => setSelectedCafe(cafe)}
+                            onClick={() => info('View', `Viewing ${cafe.name}`, 2000)}
                             className="text-slate-500 hover:text-blue-600 p-1 rounded hover:bg-blue-50"
                           >
                             <EyeIcon className="h-4 w-4" />
@@ -426,17 +452,17 @@ export default function SuperAdminPage() {
                             onClick={() => warning('Delete', `Are you sure you want to delete ${cafe.name}?`, 4000)}
                             className="text-slate-500 hover:text-red-600 p-1 rounded hover:bg-red-50"
                           >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
                         </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Create Cafe Modal */}
         {showCreateCafe && (
@@ -552,10 +578,10 @@ export default function SuperAdminPage() {
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={handleCreateCafe}
-                    disabled={loading || !form.name || !form.address || !form.contactNumber || !form.contactEmail}
+                    disabled={!form.name || !form.address || !form.contactNumber || !form.contactEmail}
                     className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {loading ? 'Creating...' : 'Create Cafe'}
+                    Create Cafe
                   </button>
                   <button
                     onClick={() => setShowCreateCafe(false)}
@@ -568,93 +594,6 @@ export default function SuperAdminPage() {
             </div>
           </div>
         )}
-
-        {/* Create Admin Modal */}
-        {showCreateAdmin && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">Create Cafe Admin</h3>
-                <button
-                  onClick={() => setShowCreateAdmin(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircleIcon className="h-6 w-6" />
-                </button>
-              </div>
-
-              <div className="grid gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cafe</label>
-                  <select
-                    value={adminForm.cafeId}
-                    onChange={(e) => setAdminForm({ ...adminForm, cafeId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select a cafe</option>
-                    {cafes.map((cafe) => (
-                      <option key={cafe._id} value={cafe._id}>
-                        {cafe.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Admin Name</label>
-                  <input
-                    type="text"
-                    value={adminForm.name}
-                    onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter admin name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={adminForm.email}
-                    onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="admin@cafe.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                  <input
-                    type="password"
-                    value={adminForm.password}
-                    onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter password"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={handleCreateAdmin}
-                    disabled={loading || !adminForm.cafeId || !adminForm.name || !adminForm.email || !adminForm.password}
-                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {loading ? 'Creating...' : 'Create Admin'}
-                  </button>
-                  <button
-                    onClick={() => setShowCreateAdmin(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </Layout>
-    </RequireRole>
   );
 }
-
-
