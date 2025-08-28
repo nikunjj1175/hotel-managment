@@ -236,7 +236,8 @@ export default function SuperAdminPage() {
   ];
 
   return (
-    <Layout title="Super Admin Dashboard">
+    <RequireRole allow={['SUPER_ADMIN']}>
+      <Layout title="Super Admin Dashboard">
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="rounded-3xl p-8 text-gray-800 relative overflow-hidden bg-gradient-to-r from-yellow-50 via-emerald-50 to-sky-50 border border-gray-200">
@@ -651,7 +652,8 @@ export default function SuperAdminPage() {
             </div>
           </div>
         )}
-    </Layout>
+      </Layout>
+    </RequireRole>
   );
 }
 

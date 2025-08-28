@@ -143,7 +143,8 @@ export default function CafeAdminPage() {
   ];
 
   return (
-    <Layout title="Cafe Admin Dashboard">
+    <RequireRole allow={['CAFE_ADMIN', 'SUPER_ADMIN']}>
+      <Layout title="Cafe Admin Dashboard">
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 rounded-3xl p-8 text-white relative overflow-hidden">
@@ -300,5 +301,6 @@ export default function CafeAdminPage() {
           </div>
         )}
       </Layout>
+    </RequireRole>
   );
 }

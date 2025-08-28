@@ -1,8 +1,9 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
 import { login } from '../store/slices/authSlice';
 import { useRouter } from 'next/router';
 import { EnvelopeIcon, LockClosedIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { Role, getPortalPath } from '../utils/roles';
 
 export default function Login() {
   const dispatch = useAppDispatch();
@@ -10,20 +11,14 @@ export default function Login() {
   const { loading, error, user } = useAppSelector(s => s.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const target = useMemo(() => (router.query.target as string) as Role | undefined, [router.query.target]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const res = await dispatch(login({ email, password }));
     if ((res as any).meta.requestStatus === 'fulfilled') {
-      const role = (res as any).payload.user.role;
-      // Redirect based on role
-      if (role === 'SUPER_ADMIN') router.push('/super-admin-new');
-      else if (role === 'CAFE_ADMIN') router.push('/cafe-admin');
-      else if (role === 'KITCHEN') router.push('/kitchen');
-      else if (role === 'WAITER') router.push('/waiter');
-      else if (role === 'MANAGER') router.push('/manager');
-      else if (role === 'CUSTOMER') router.push('/customer');
-      else router.push('/admin'); // Fallback for old roles
+      // After successful login, always go to cards screen
+      router.push('/');
     }
   };
 
@@ -37,11 +32,10 @@ export default function Login() {
                 Login
               </h2>
               <p className="mt-1 text-sm text-gray-500 leading-relaxed">Access your dashboard and continue managing operations.</p>
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-left">
-                <p className="text-xs font-semibold text-blue-800 mb-2">Demo Credentials:</p>
-                <p className="text-xs text-blue-700"><strong>Super Admin:</strong> admin@example.com / admin123</p>
-                <p className="text-xs text-blue-700"><strong>Cafe Admin:</strong> cafe@example.com / cafe123</p>
-              </div>
+              {target && (
+                <p className="mt-2 text-xs text-gray-600">You are logging in for <strong>{target.replace('_',' ')}</strong> access.</p>
+              )}
+              
             </div>
 
             <form onSubmit={onSubmit} className="grid gap-4">

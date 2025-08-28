@@ -14,7 +14,7 @@ function Boot() {
   useEffect(() => {
     // Set hydrated to true immediately - NO MORE LOADING ISSUES
     setTimeout(() => {
-      store.dispatch(setHydrated());
+      store.dispatch(setHydrated(true));
     }, 100);
     
     // hydrate axios auth header if token exists

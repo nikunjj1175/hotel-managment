@@ -304,7 +304,8 @@ export default function WaiterPage() {
   );
 
   return (
-    <Layout title="Waiter Dashboard">
+    <RequireRole allow={['WAITER', 'SUPER_ADMIN']}>
+      <Layout title="Waiter Dashboard">
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl p-8 text-white relative overflow-hidden">
@@ -392,5 +393,6 @@ export default function WaiterPage() {
           </div>
         )}
       </Layout>
+    </RequireRole>
   );
 }

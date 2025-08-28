@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { fetchOrders, connectSocket, updateOrderStatus } from '../store/slices/ordersSlice';
 import toast from 'react-hot-toast';
 import { RequireRole } from '../components/RequireRole';
+import { Role } from '../utils/roles';
 import Layout from '../components/Layout';
 
 export default function DeliveryPanel() {
@@ -28,7 +29,8 @@ export default function DeliveryPanel() {
   const filtered = mockOrders.filter(o => o.status === 'COMPLETED');
 
   return (
-    <Layout title="Delivery Panel">
+    <RequireRole allow={['DELIVERY', 'SUPER_ADMIN'] as Role[]}>
+      <Layout title="Delivery Panel">
       {loading && (
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3" />
@@ -57,7 +59,8 @@ export default function DeliveryPanel() {
           </div>
         ))}
       </div>
-    </Layout>
+      </Layout>
+    </RequireRole>
   );
 }
 

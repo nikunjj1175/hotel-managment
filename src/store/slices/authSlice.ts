@@ -130,6 +130,11 @@ export const logout = createAsyncThunk(
   'auth/logout',
   async () => {
     await axios.post('/api/auth/logout');
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('auth');
+      } catch {}
+    }
   }
 );
 
@@ -189,6 +194,11 @@ const authSlice = createSlice({
         state.error = null;
         if (state.token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+        }
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('auth', JSON.stringify({ token: state.token, user: state.user }));
+          } catch {}
         }
       })
       .addCase(login.rejected, (state, action) => {

@@ -149,6 +149,7 @@ export default function AdminMenuPage() {
   // NO MORE LOADING CHECKS - UI SHOWS IMMEDIATELY
 
     return (
+    <RequireRole allow={['CAFE_ADMIN','SUPER_ADMIN']}>
     <Layout title="Manage Menu">
         <div className="grid gap-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -343,6 +344,7 @@ export default function AdminMenuPage() {
           </div>
         </div>
       </Layout>
+    </RequireRole>
   );
 }
 

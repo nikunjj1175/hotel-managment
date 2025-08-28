@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
+import { useAppSelector } from '../store';
+import { useToast } from '../components/Toast';
 import {
   ShieldCheckIcon,
   BuildingStorefrontIcon,
@@ -12,17 +16,28 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function Home() {
-  const tiles = [
-    { href: '/super-admin', title: 'Super Admin', Icon: ShieldCheckIcon, gradient: 'from-yellow-400/30 via-amber-300/20 to-orange-300/20' },
-    { href: '/cafe-admin', title: 'Cafe Admin', Icon: BuildingStorefrontIcon, gradient: 'from-emerald-400/25 via-teal-300/20 to-cyan-300/20' },
-    { href: '/kitchen', title: 'Kitchen', Icon: FireIcon, gradient: 'from-orange-400/25 via-red-300/20 to-pink-300/20' },
-    { href: '/waiter', title: 'Waiter', Icon: UserIcon, gradient: 'from-purple-400/25 via-fuchsia-300/20 to-pink-300/20' },
-    { href: '/manager', title: 'Manager', Icon: ChartBarSquareIcon, gradient: 'from-indigo-400/25 via-violet-300/20 to-sky-300/20' },
-    { href: '/customer', title: 'Customer', Icon: UserCircleIcon, gradient: 'from-pink-400/25 via-rose-300/20 to-orange-300/20' },
-    { href: '/admin/tables', title: 'Tables', Icon: TableCellsIcon, gradient: 'from-teal-400/25 via-cyan-300/20 to-blue-300/20' },
-    { href: '/admin/menu', title: 'Menu', Icon: ClipboardDocumentListIcon, gradient: 'from-yellow-400/25 via-orange-300/20 to-rose-300/20' },
-    { href: '/delivery', title: 'Delivery', Icon: TruckIcon, gradient: 'from-sky-400/25 via-blue-300/20 to-indigo-300/20' },
+  const router = useRouter();
+  const { user, hydrated } = useAppSelector(s => s.auth);
+  
+  // Show login first when unauthenticated
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!user) router.replace('/login');
+  }, [hydrated, user, router]);
+  const toast = useToast();
+  const tiles: { target: string; href: string; title: string; Icon: any; gradient: string; roles?: string[] }[] = [
+    { target: 'SUPER_ADMIN', href: '/super-admin', title: 'Super Admin', Icon: ShieldCheckIcon, gradient: 'from-yellow-400/30 via-amber-300/20 to-orange-300/20', roles: ['SUPER_ADMIN'] },
+    { target: 'CAFE_ADMIN', href: '/cafe-admin', title: 'Cafe Admin', Icon: BuildingStorefrontIcon, gradient: 'from-emerald-400/25 via-teal-300/20 to-cyan-300/20', roles: ['CAFE_ADMIN'] },
+    { target: 'KITCHEN', href: '/kitchen', title: 'Kitchen', Icon: FireIcon, gradient: 'from-orange-400/25 via-red-300/20 to-pink-300/20', roles: ['KITCHEN'] },
+    { target: 'WAITER', href: '/waiter', title: 'Waiter', Icon: UserIcon, gradient: 'from-purple-400/25 via-fuchsia-300/20 to-pink-300/20', roles: ['WAITER'] },
+    { target: 'MANAGER', href: '/manager', title: 'Manager', Icon: ChartBarSquareIcon, gradient: 'from-indigo-400/25 via-violet-300/20 to-sky-300/20', roles: ['MANAGER','CAFE_ADMIN'] },
+    { target: 'CUSTOMER', href: '/customer', title: 'Customer', Icon: UserCircleIcon, gradient: 'from-pink-400/25 via-rose-300/20 to-orange-300/20', roles: ['CUSTOMER'] },
+    { target: 'CAFE_ADMIN', href: '/admin/tables', title: 'Tables', Icon: TableCellsIcon, gradient: 'from-teal-400/25 via-cyan-300/20 to-blue-300/20', roles: ['CAFE_ADMIN'] },
+    { target: 'CAFE_ADMIN', href: '/admin/menu', title: 'Menu', Icon: ClipboardDocumentListIcon, gradient: 'from-yellow-400/25 via-orange-300/20 to-rose-300/20', roles: ['CAFE_ADMIN'] },
+    { target: 'DELIVERY', href: '/delivery', title: 'Delivery', Icon: TruckIcon, gradient: 'from-sky-400/25 via-blue-300/20 to-indigo-300/20', roles: ['DELIVERY'] },
   ];
+
+  if (!hydrated || !user) return null;
 
   return (
     <div className="relative overflow-hidden min-h-screen" style={{ backgroundImage: 'linear-gradient(135deg, #FFFDFE, #F6F9FC)' }}>
@@ -50,13 +65,25 @@ export default function Home() {
 
         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {tiles.map((item, idx) => {
-            const { href, title, Icon, gradient } = item;
+            const { href, title, Icon, gradient, target } = item as any;
             return (
               <Link
                 key={href}
-                href={href}
+                href={`/login?target=${target}`}
                 className="group relative block no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-3xl animate-fade-up"
                 style={{ animationDelay: `${100 + idx * 70}ms` }}
+                onClick={(e) => {
+                  if (!user) return; // allow link to login with target
+                  // If authenticated: SUPER_ADMIN full access → go directly; others only within role
+                  e.preventDefault();
+                  if (user.role === 'SUPER_ADMIN') {
+                    router.push(href);
+                    return;
+                  }
+                  const allowed = !item.roles || item.roles.includes(user.role as any);
+                  if (allowed) router.push(href);
+                  else toast.warning('Access Denied', `You are logged in as ${user.role}. You cannot open ${title}.`, 3000);
+                }}
               >
                 <div className={`p-[2px] rounded-3xl bg-gradient-to-br ${gradient} transition-all duration-300 overflow-hidden group-hover:shadow-2xl` }>
                   <div className="rounded-3xl bg-white/70 backdrop-blur-xl p-6 shadow-sm ring-1 ring-black/5 transition-all duration-300 group-hover:shadow-xl">

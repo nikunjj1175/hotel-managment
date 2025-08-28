@@ -171,7 +171,7 @@ export default function Layout({ title, children }: PropsWithChildren<{ title?: 
                           </Link>
                           <div className="border-t border-gray-200 my-2" />
                           <button 
-                            onClick={() => { setMenuOpen(false); dispatch(logout()); }} 
+                            onClick={() => { setMenuOpen(false); dispatch(logout()); router.push('/login'); }} 
                             className="w-full flex items-center gap-3 text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors duration-150"
                           >
                             <ArrowRightOnRectangleIcon className="w-5 h-5" />
@@ -242,7 +242,7 @@ export default function Layout({ title, children }: PropsWithChildren<{ title?: 
                     <span className="text-slate-800 font-medium">{user.name}</span>
                   </div>
                   <button 
-                    onClick={() => dispatch(logout())} 
+                    onClick={() => { dispatch(logout()); router.push('/login'); }} 
                     className="px-4 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
                   >
                     <ArrowRightOnRectangleIcon className="w-4 h-4" />

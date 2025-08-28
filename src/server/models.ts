@@ -44,7 +44,7 @@ export interface IUser {
   name: string;
   email: string;
   password: string;
-  role: 'SUPER_ADMIN' | 'CAFE_ADMIN' | 'KITCHEN' | 'WAITER' | 'MANAGER' | 'CUSTOMER';
+  role: 'SUPER_ADMIN' | 'CAFE_ADMIN' | 'KITCHEN' | 'WAITER' | 'MANAGER' | 'CUSTOMER' | 'DELIVERY';
   cafeId?: string; // For cafe-specific users
   permissions: string[];
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
@@ -195,7 +195,7 @@ const userSchema = new mongoose.Schema<IUser>({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['SUPER_ADMIN', 'CAFE_ADMIN', 'KITCHEN', 'WAITER', 'MANAGER', 'CUSTOMER'], required: true },
+  role: { type: String, enum: ['SUPER_ADMIN', 'CAFE_ADMIN', 'KITCHEN', 'WAITER', 'MANAGER', 'CUSTOMER', 'DELIVERY'], required: true },
   cafeId: String,
   permissions: [{ type: String }],
   status: { type: String, enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED'], default: 'ACTIVE' }

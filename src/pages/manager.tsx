@@ -345,7 +345,8 @@ export default function ManagerPage() {
   );
 
   return (
-    <Layout title="Manager Dashboard">
+    <RequireRole allow={['MANAGER','CAFE_ADMIN','SUPER_ADMIN']}>
+      <Layout title="Manager Dashboard">
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 rounded-3xl p-8 text-white relative overflow-hidden">
@@ -499,5 +500,6 @@ export default function ManagerPage() {
           </div>
         )}
       </Layout>
+    </RequireRole>
   );
 }

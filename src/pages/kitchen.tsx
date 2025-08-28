@@ -291,7 +291,8 @@ export default function KitchenPage() {
   const readyOrders = orders.filter(o => o.orderStatus === 'READY');
 
   return (
-    <Layout title="Kitchen Dashboard">
+    <RequireRole allow={['KITCHEN', 'SUPER_ADMIN']}>
+      <Layout title="Kitchen Dashboard">
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="rounded-3xl p-8 text-gray-900 relative overflow-hidden bg-gradient-to-r from-sky-50 via-indigo-50 to-violet-50 border border-slate-200 shadow-sm">
@@ -370,6 +371,7 @@ export default function KitchenPage() {
       </div>
                 )}
       </Layout>
+    </RequireRole>
   );
 }
 

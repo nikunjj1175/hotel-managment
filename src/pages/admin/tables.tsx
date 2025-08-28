@@ -79,6 +79,7 @@ export default function AdminTablesPage() {
   // NO MORE LOADING CHECKS - UI SHOWS IMMEDIATELY
 
   return (
+    <RequireRole allow={['CAFE_ADMIN','SUPER_ADMIN']}>
     <Layout title="Tables & QR">
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -206,6 +207,7 @@ export default function AdminTablesPage() {
         </div>
       </div>
     </Layout>
+    </RequireRole>
   );
 }
 
