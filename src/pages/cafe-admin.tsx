@@ -26,6 +26,7 @@ import { useToast } from '../components/Toast';
 export default function CafeAdminPage() {
   const { user, cafe, hydrated } = useAppSelector(s => s.auth);
   const { success, error: toastError, warning, info } = useToast();
+  const [selectedCafeData, setSelectedCafeData] = useState<any>(null);
 
   // NO MORE LOADING CHECKS - UI SHOWS IMMEDIATELY
 
@@ -39,6 +40,22 @@ export default function CafeAdminPage() {
   const socket = useSocket();
 
   useEffect(() => {
+    // Check if we have selected cafe data from super admin
+    if (typeof window !== 'undefined') {
+      try {
+        const storedCafe = localStorage.getItem('selectedCafe');
+        if (storedCafe) {
+          const cafeData = JSON.parse(storedCafe);
+          setSelectedCafeData(cafeData);
+          success('Cafe Dashboard', `Viewing ${cafeData.name} dashboard`, 3000);
+          // Clear the stored data after using it
+          localStorage.removeItem('selectedCafe');
+        }
+      } catch (error) {
+        console.error('Error loading selected cafe data:', error);
+      }
+    }
+
     loadStats();
     
     // Socket.IO event listeners for real-time updates
@@ -159,6 +176,20 @@ export default function CafeAdminPage() {
                 <div className="mt-4 flex items-center gap-3">
                   <BuildingStorefrontIcon className="h-6 w-6" />
                   <span className="text-lg font-medium">{cafe.name}</span>
+                </div>
+              )}
+              {selectedCafeData && (
+                <div className="mt-4 p-4 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <BuildingStorefrontIcon className="h-6 w-6" />
+                    <span className="text-lg font-medium text-white">{selectedCafeData.name}</span>
+                    <span className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+                      Super Admin View
+                    </span>
+                  </div>
+                  <p className="text-green-100 text-sm">
+                    {selectedCafeData.address} • {selectedCafeData.contactEmail}
+                  </p>
                 </div>
               )}
             </div>

@@ -18,10 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.json(users);
   }
   if (req.method === 'POST') {
-    const { name, email, password, role } = req.body || {};
+    const { name, email, password, role, cafeId } = req.body || {};
     const exists = await (User as any).findOne({ email });
     if (exists) return res.status(400).json({ message: 'Email in use' });
-    const user = await (User as any).create({ name, email, password, role });
+    const user = await (User as any).create({ name, email, password, role, cafeId });
     return res.json({ id: user._id });
   }
   return res.status(405).end();

@@ -9,8 +9,8 @@ export function signToken(payload: any) {
 
 export function signAccessToken(payload: any) {
   const secret = process.env.JWT_SECRET || 'secret';
-  // 30 minutes access token
-  return jwt.sign(payload, secret, { expiresIn: '30m' });
+  // 2 hours access token
+  return jwt.sign(payload, secret, { expiresIn: '2h' });
 }
 
 export function signRefreshToken(payload: any) {
@@ -50,13 +50,42 @@ export function requireAuth(roles?: string[]) {
   return (req: NextApiRequest, res: NextApiResponse, next: () => void) => {
     try {
       const token = (req.headers.authorization || '').replace('Bearer ', '');
+      console.log('Auth middleware - Authorization header:', req.headers.authorization);
+      console.log('Auth middleware - Token:', token ? 'Present' : 'Missing');
+      
       if (!token) return res.status(401).json({ message: 'Unauthorized' });
+      
       const payload = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+      console.log('Auth middleware - Token payload:', payload);
+      
+      // Check if payload has required fields
+      if (!payload || !payload.role) {
+        console.log('Auth middleware - Invalid payload structure');
+        return res.status(401).json({ message: 'Invalid token payload' });
+      }
+      
+      // Normalize the payload to ensure consistent structure
+      const normalizedPayload = {
+        id: payload.userId || payload.id,
+        role: payload.role,
+        name: payload.name,
+        cafeId: payload.cafeId
+      };
+      
+      console.log('Auth middleware - Normalized payload:', normalizedPayload);
+      
       // @ts-ignore
-      (req as any).user = payload;
-      if (roles && roles.length && !roles.includes(payload.role)) return res.status(403).json({ message: 'Forbidden' });
+      (req as any).user = normalizedPayload;
+      
+      if (roles && roles.length && !roles.includes(normalizedPayload.role)) {
+        console.log('Auth middleware - Role mismatch. Required:', roles, 'User role:', normalizedPayload.role);
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+      
+      console.log('Auth middleware - Authentication successful');
       next();
-    } catch {
+    } catch (error) {
+      console.error('Auth middleware error:', error);
       return res.status(401).json({ message: 'Unauthorized' });
     }
   };

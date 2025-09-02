@@ -176,14 +176,37 @@ export default function SuperAdminPage() {
 
   const handleCreateCafe = async () => {
     try {
-      // Mock API call
-      const newCafe: Cafe = {
-        _id: Date.now().toString(),
-        ...form,
-        status: 'ACTIVE',
-        paymentStatus: 'ACTIVE',
-        createdAt: new Date().toISOString()
-      };
+      console.log('Creating cafe with data:', form);
+      
+      // Get auth token from Redux store
+      const authData = localStorage.getItem('auth');
+      if (!authData) {
+        throw new Error('No authentication token found');
+      }
+      
+      const { token } = JSON.parse(authData);
+      if (!token) {
+        throw new Error('Invalid authentication token');
+      }
+      
+      // Make real API call with authentication
+      const response = await fetch('/api/cafes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(form)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const newCafe = await response.json();
+      console.log('Cafe created successfully:', newCafe);
+      
       setCafes([...cafes, newCafe]);
       success('Cafe Created', 'Cafe has been created successfully!', 3000);
       setShowCreateCafe(false);
@@ -196,6 +219,7 @@ export default function SuperAdminPage() {
         config: { kitchenEnabled: true, waiterEnabled: true, managerEnabled: true }
       });
     } catch (err: any) {
+      console.error('Error creating cafe:', err);
       toastError('Error', err.message || 'Failed to create cafe', 4000);
     }
   };
