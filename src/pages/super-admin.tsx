@@ -26,6 +26,7 @@ import {
 import { createCafe, createCafeAdmin } from '../store/slices/authSlice';
 import axios from 'axios';
 import { useToast } from '../components/Toast';
+import { useSocket } from '../hooks/useSocket';
 
 interface Cafe {
   _id: string;
@@ -84,6 +85,7 @@ export default function SuperAdminPage() {
   const router = useRouter();
   const { user, loading, hydrated, token } = useAppSelector(s => s.auth);
   const { success, error: toastError, warning, info } = useToast();
+  const socket = useSocket();
 
   // NO MORE LOADING CHECKS - UI SHOWS IMMEDIATELY
 
@@ -135,7 +137,41 @@ export default function SuperAdminPage() {
 
   useEffect(() => {
     loadCafes();
-  }, []);
+
+    if (socket) {
+      socket.on('cafe:created', (newCafe: any) => {
+        setCafes(prev => [newCafe, ...prev]);
+        success('Cafe Created', `New cafe "${newCafe.name}" has been created`, 4000);
+      });
+
+      socket.on('cafe:updated', (updatedCafe: any) => {
+        setCafes(prev => prev.map(cafe => cafe._id === updatedCafe._id ? updatedCafe : cafe));
+        info('Cafe Updated', `Cafe "${updatedCafe.name}" has been updated`, 3000);
+      });
+
+      socket.on('cafe:subscription_expiring', (cafeAlert: any) => {
+        warning('Subscription Alert', `Cafe "${cafeAlert.name}" subscription expires in ${cafeAlert.daysLeft} days`, 5000);
+      });
+
+      socket.on('system:alert', (systemAlert: any) => {
+        warning('System Alert', systemAlert.message, 5000);
+      });
+
+      socket.emit('join:super_admin');
+    }
+
+    const interval = setInterval(loadCafes, 300000);
+    return () => {
+      clearInterval(interval);
+      if (socket) {
+        socket.off('cafe:created');
+        socket.off('cafe:updated');
+        socket.off('cafe:subscription_expiring');
+        socket.off('system:alert');
+        socket.emit('leave:super_admin');
+      }
+    };
+  }, [socket]);
 
   const loadCafes = async () => {
     try {
@@ -378,8 +414,8 @@ export default function SuperAdminPage() {
               </div>
             </button>
 
-            <a
-              href="/super-admin-new"
+            <button
+              onClick={() => info('Analytics', 'View detailed system analytics and reports', 2000)}
               className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md hover:scale-[1.01] transition-transform duration-200 group cursor-pointer text-left h-full min-h-[112px]"
             >
               <div className="flex items-center gap-4">
@@ -391,7 +427,7 @@ export default function SuperAdminPage() {
                   <p className="text-sm text-gray-600 mt-1">Monitor system performance and cafe metrics</p>
                 </div>
               </div>
-            </a>
+            </button>
               </div>
             </div>
 
