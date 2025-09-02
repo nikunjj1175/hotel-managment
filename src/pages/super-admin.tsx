@@ -128,11 +128,23 @@ export default function SuperAdminPage() {
       managerEnabled: true
     }
   });
+  const [formErrors, setFormErrors] = useState({
+    name: '',
+    address: '',
+    contactNumber: '',
+    contactEmail: ''
+  });
   const [adminForm, setAdminForm] = useState({
     name: '',
     email: '',
     password: '',
     cafeId: ''
+  });
+  const [adminErrors, setAdminErrors] = useState({
+    cafeId: '',
+    name: '',
+    email: '',
+    password: ''
   });
 
   useEffect(() => {
@@ -192,8 +204,34 @@ export default function SuperAdminPage() {
   };
 
   const handleCreateCafe = async () => {
+    // Validate before submit
+    const nextErrors: typeof formErrors = { name: '', address: '', contactNumber: '', contactEmail: '' };
+    const trimmed = {
+      name: form.name.trim(),
+      address: form.address.trim(),
+      contactNumber: form.contactNumber.trim(),
+      contactEmail: form.contactEmail.trim()
+    };
+    if (trimmed.name.length < 3) nextErrors.name = 'Name must be at least 3 characters';
+    if (trimmed.address.length < 10) nextErrors.address = 'Address must be at least 10 characters';
+    // Basic international number: +, digits, spaces, dashes allowed, 7-15 digits
+    const digitsCount = trimmed.contactNumber.replace(/\D/g, '').length;
+    if (digitsCount < 7 || digitsCount > 15) nextErrors.contactNumber = 'Enter a valid phone number';
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed.contactEmail);
+    if (!emailOk) nextErrors.contactEmail = 'Enter a valid email address';
+    setFormErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) {
+      toastError('Validation failed', 'Please correct the highlighted fields', 4000);
+      return;
+    }
     try {
-      await dispatch(createCafe(form)).unwrap();
+      await dispatch(createCafe({
+        ...form,
+        name: trimmed.name,
+        address: trimmed.address,
+        contactNumber: trimmed.contactNumber,
+        contactEmail: trimmed.contactEmail
+      })).unwrap();
       success('Cafe Created', 'Cafe has been created successfully!', 3000);
       setShowCreateCafe(false);
       setForm({
@@ -204,6 +242,7 @@ export default function SuperAdminPage() {
         subscriptionPlan: subscriptionPlans[0],
         config: { kitchenEnabled: true, waiterEnabled: true, managerEnabled: true }
       });
+      setFormErrors({ name: '', address: '', contactNumber: '', contactEmail: '' });
       loadCafes();
     } catch (err: any) {
       toastError('Error', err.message || 'Failed to create cafe', 4000);
@@ -211,11 +250,38 @@ export default function SuperAdminPage() {
   };
 
   const handleCreateAdmin = async () => {
+    // Validate admin form
+    const nextErrors: typeof adminErrors = { cafeId: '', name: '', email: '', password: '' };
+    const trimmed = {
+      name: adminForm.name.trim(),
+      email: adminForm.email.trim(),
+      password: adminForm.password.trim(),
+      cafeId: adminForm.cafeId.trim()
+    };
+    if (!trimmed.cafeId) nextErrors.cafeId = 'Please select a cafe';
+    if (trimmed.name.length < 3) nextErrors.name = 'Name must be at least 3 characters';
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed.email);
+    if (!emailOk) nextErrors.email = 'Enter a valid email address';
+    // Password: min 8 chars, at least 1 letter and 1 number
+    const passOk = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(trimmed.password);
+    if (!passOk) nextErrors.password = 'Min 8 chars, include letters and numbers';
+    setAdminErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) {
+      toastError('Validation failed', 'Please correct the highlighted fields', 4000);
+      return;
+    }
     try {
-      await dispatch(createCafeAdmin(adminForm)).unwrap();
+      await dispatch(createCafeAdmin({
+        ...adminForm,
+        name: trimmed.name,
+        email: trimmed.email,
+        password: trimmed.password,
+        cafeId: trimmed.cafeId
+      })).unwrap();
       success('Admin Created', 'Cafe admin has been created successfully!', 3000);
       setShowCreateAdmin(false);
       setAdminForm({ name: '', email: '', password: '', cafeId: '' });
+      setAdminErrors({ cafeId: '', name: '', email: '', password: '' });
     } catch (err: any) {
       toastError('Error', err.message || 'Failed to create admin', 4000);
     }
@@ -415,7 +481,7 @@ export default function SuperAdminPage() {
             </button>
 
             <button
-              onClick={() => info('Analytics', 'View detailed system analytics and reports', 2000)}
+              onClick={() => router.push('/super-admin-analytics')}
               className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md hover:scale-[1.01] transition-transform duration-200 group cursor-pointer text-left h-full min-h-[112px]"
             >
               <div className="flex items-center gap-4">
@@ -570,6 +636,9 @@ export default function SuperAdminPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter cafe name"
                   />
+                  {formErrors.name && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.name}</p>
+                  )}
                 </div>
 
                 <div>
@@ -581,6 +650,9 @@ export default function SuperAdminPage() {
                     placeholder="Enter full address"
                     rows={3}
                   />
+                  {formErrors.address && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.address}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -593,6 +665,9 @@ export default function SuperAdminPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="+1-555-0123"
                     />
+                    {formErrors.contactNumber && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.contactNumber}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
@@ -603,6 +678,9 @@ export default function SuperAdminPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="info@cafe.com"
                     />
+                    {formErrors.contactEmail && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.contactEmail}</p>
+                    )}
                   </div>
                 </div>
 
@@ -660,7 +738,7 @@ export default function SuperAdminPage() {
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={handleCreateCafe}
-                    disabled={loading || !form.name || !form.address || !form.contactNumber || !form.contactEmail}
+                    disabled={loading}
                     className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {loading ? 'Creating...' : 'Create Cafe'}
@@ -706,6 +784,9 @@ export default function SuperAdminPage() {
                       </option>
                     ))}
                   </select>
+                  {adminErrors.cafeId && (
+                    <p className="mt-1 text-xs text-red-600">{adminErrors.cafeId}</p>
+                  )}
                 </div>
 
                 <div>
@@ -717,6 +798,9 @@ export default function SuperAdminPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter admin name"
                   />
+                  {adminErrors.name && (
+                    <p className="mt-1 text-xs text-red-600">{adminErrors.name}</p>
+                  )}
                 </div>
 
                 <div>
@@ -728,6 +812,9 @@ export default function SuperAdminPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="admin@cafe.com"
                   />
+                  {adminErrors.email && (
+                    <p className="mt-1 text-xs text-red-600">{adminErrors.email}</p>
+                  )}
                 </div>
 
                 <div>
@@ -739,6 +826,9 @@ export default function SuperAdminPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter password"
                   />
+                  {adminErrors.password && (
+                    <p className="mt-1 text-xs text-red-600">{adminErrors.password}</p>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">
