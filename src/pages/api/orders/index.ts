@@ -35,6 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await runMiddleware(req, res, requireAuth(['SUPER_ADMIN','ADMIN','KITCHEN','DELIVERY']));
   const role = (req as any).user.role as string;
   const filter: any = {};
+  const cafeId = (req.query as any).cafeId as string | undefined;
+  if (cafeId) filter.cafeId = cafeId;
   if (role === 'KITCHEN') filter.status = { $in: ['NEW','ACCEPTED','IN_PROGRESS'] };
   if (role === 'DELIVERY') filter.status = 'COMPLETED';
   const orders = await (Order as any).find(filter).populate('table').sort({ createdAt: -1 });

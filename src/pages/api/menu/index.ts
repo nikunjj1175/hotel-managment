@@ -10,7 +10,10 @@ function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: any) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectDb();
   if (req.method === 'GET') {
-    const items = await (MenuItem as any).find().sort({ createdAt: -1 });
+    const cafeId = (req.query as any).cafeId as string | undefined;
+    const filter: any = {};
+    if (cafeId) filter.cafeId = cafeId;
+    const items = await (MenuItem as any).find(filter).sort({ createdAt: -1 });
     return res.json(items);
   }
   if (req.method === 'POST') {
