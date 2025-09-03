@@ -19,7 +19,8 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   ShoppingCartIcon,
-  XCircleIcon
+  XCircleIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 import { useToast } from '../components/Toast';
 
@@ -102,14 +103,32 @@ export default function CafeAdminPage() {
 
   const loadStats = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      const mockStats = {
-        totalOrders: 24,
-        totalRevenue: 1247,
-        activeTables: 8,
-        menuItems: 45
-      };
-      setCafeStats(mockStats);
+      const selectedId = selectedCafeData?._id || user?.cafeId;
+      if (!selectedId) {
+        setCafeStats({ totalOrders: 0, totalRevenue: 0, activeTables: 0, menuItems: 0 });
+        return;
+      }
+
+      const [ordersRes, menuRes, tablesRes] = await Promise.all([
+        fetch(`/api/orders?cafeId=${selectedId}`),
+        fetch(`/api/menu?cafeId=${selectedId}`),
+        fetch(`/api/tables?cafeId=${selectedId}`)
+      ]);
+
+      const orders = await ordersRes.json();
+      const menuItems = await menuRes.json();
+      const tables = await tablesRes.json();
+
+      const totalRevenue = Array.isArray(orders)
+        ? orders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0)
+        : 0;
+
+      setCafeStats({
+        totalOrders: Array.isArray(orders) ? orders.length : 0,
+        totalRevenue,
+        activeTables: Array.isArray(tables) ? tables.length : 0,
+        menuItems: Array.isArray(menuItems) ? menuItems.length : 0
+      });
     } catch (error) {
       toastError('Failed to load stats', 'Could not fetch cafe statistics.', 5000);
       console.error('Error loading stats:', error);
@@ -119,43 +138,39 @@ export default function CafeAdminPage() {
   const statsCards = [
     {
       title: 'Total Orders',
-      value: '24',
-      change: '+5 today',
+      value: String(cafeStats.totalOrders),
+      change: '',
       changeType: 'positive',
       icon: ShoppingCartIcon,
-      color: 'from-blue-500 to-indigo-600',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600'
+      iconBg: 'bg-indigo-50',
+      iconClass: 'text-blue-500'
     },
     {
       title: 'Active Tables',
-      value: '8',
-      change: '12 total',
+      value: String(cafeStats.activeTables),
+      change: '',
       changeType: 'positive',
       icon: TableCellsIcon,
-      color: 'from-green-500 to-emerald-600',
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-600'
+      iconBg: 'bg-emerald-50',
+      iconClass: 'text-emerald-500'
     },
     {
       title: 'Menu Items',
-      value: '45',
-      change: '42 available',
+      value: String(cafeStats.menuItems),
+      change: '',
       changeType: 'positive',
       icon: ClipboardDocumentListIcon,
-      color: 'from-purple-500 to-pink-600',
-      bgColor: 'bg-purple-50',
-      iconColor: 'text-purple-600'
+      iconBg: 'bg-purple-50',
+      iconClass: 'text-violet-500'
     },
     {
       title: 'Revenue Today',
-      value: '$1,247',
-      change: '+12% vs yesterday',
+      value: `$${cafeStats.totalRevenue}`,
+      change: '',
       changeType: 'positive',
       icon: CurrencyDollarIcon,
-      color: 'from-emerald-500 to-teal-600',
-      bgColor: 'bg-emerald-50',
-      iconColor: 'text-emerald-600'
+      iconBg: 'bg-amber-50',
+      iconClass: 'text-amber-500'
     }
   ];
 
@@ -164,40 +179,30 @@ export default function CafeAdminPage() {
       <Layout title="Cafe Admin Dashboard">
         {/* Welcome Section */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 rounded-3xl p-8 text-white relative overflow-hidden">
+          <div className="rounded-3xl p-8 text-gray-800 relative overflow-hidden bg-gradient-to-r from-yellow-50 via-emerald-50 to-sky-50 border border-gray-200">
             <div className="relative z-10">
-              <h1 className="text-3xl font-bold mb-2">
-                Welcome back, {user?.name}! 👋
-              </h1>
-              <p className="text-green-100 text-lg">
-                Manage your cafe operations and monitor performance
-              </p>
+              <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name}! 👋</h1>
+              <p className="text-gray-600 text-lg">Manage your cafe operations and monitor performance</p>
               {cafe && (
-                <div className="mt-4 flex items-center gap-3">
+                <div className="mt-4 flex items-center gap-3 text-gray-800">
                   <BuildingStorefrontIcon className="h-6 w-6" />
                   <span className="text-lg font-medium">{cafe.name}</span>
                 </div>
               )}
               {selectedCafeData && (
-                <div className="mt-4 p-4 bg-white/20 rounded-xl backdrop-blur-sm">
+                <div className="mt-4 p-4 bg-white/60 rounded-xl backdrop-blur-sm border border-gray-200">
                   <div className="flex items-center gap-3 mb-2">
-                    <BuildingStorefrontIcon className="h-6 w-6" />
-                    <span className="text-lg font-medium text-white">{selectedCafeData.name}</span>
-                    <span className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+                    <BuildingStorefrontIcon className="h-6 w-6 text-gray-800" />
+                    <span className="text-lg font-medium">{selectedCafeData.name}</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded-full text-xs font-medium border border-gray-200">
                       Super Admin View
                     </span>
                   </div>
-                  <p className="text-green-100 text-sm">
+                  <p className="text-gray-600 text-sm">
                     {selectedCafeData.address} • {selectedCafeData.contactEmail}
                   </p>
                 </div>
               )}
-            </div>
-            
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-32 translate-x-32" />
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-16 -translate-x-16" />
             </div>
           </div>
         </div>
@@ -232,17 +237,17 @@ export default function CafeAdminPage() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <>
-            {/* Stats Grid */}
+            {/* Stats Grid (Admin-style) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {statsCards.map((stat, index) => (
                 <div
                   key={stat.title}
-                  className={`${stat.bgColor} rounded-2xl p-6 border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group`}
+                  className={`bg-white rounded-2xl p-6 border border-slate-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 group`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-xl bg-gradient-to-r ${stat.color} bg-opacity-10`}>
-                      <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                    <div className={`h-10 w-10 rounded-full grid place-items-center ring-1 ring-slate-200 ${stat.iconBg}`}>
+                      <stat.icon className={`w-6 h-6 ${stat.iconClass}`} />
                     </div>
                     <span className={`text-sm font-medium ${
                       stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
@@ -250,51 +255,77 @@ export default function CafeAdminPage() {
                       {stat.change}
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-                  <p className="text-gray-600 text-sm">{stat.title}</p>
+                  <h3 className="text-2xl font-bold text-[#111827] mb-1">{stat.value}</h3>
+                  <p className="text-[#6b7280] text-sm">{stat.title}</p>
                 </div>
               ))}
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions (Admin-style) */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <CogIcon className="w-6 h-6 text-blue-500" />
+                <StarIcon className="w-6 h-6 text-yellow-500" />
                 Quick Actions
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <button
-                  onClick={() => setActiveTab('menu')}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group cursor-pointer text-left"
-                >
-                  <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 bg-opacity-10 mb-4 group-hover:scale-110 transition-transform duration-300 w-fit">
-                    <PlusIcon className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Menu Item</h3>
-                  <p className="text-gray-600 text-sm">Create new menu items for your customers</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('tables')}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group cursor-pointer text-left"
-                >
-                  <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 bg-opacity-10 mb-4 group-hover:scale-110 transition-transform duration-300 w-fit">
-                    <PlusIcon className="w-6 h-6 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Tables</h3>
-                  <p className="text-gray-600 text-sm">Configure tables and generate QR codes</p>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group cursor-pointer text-left"
-                >
-                  <div className="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 bg-opacity-10 mb-4 group-hover:scale-110 transition-transform duration-300 w-fit">
-                    <FireIcon className="w-6 h-6 text-orange-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">View Orders</h3>
-                  <p className="text-gray-600 text-sm">Monitor and manage incoming orders</p>
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  {
+                    id: 'add-user',
+                    title: 'Add New User',
+                    description: 'Create a new user account',
+                    icon: UserGroupIcon,
+                    cardGradient: 'from-indigo-50 to-purple-50',
+                    iconClass: 'text-indigo-500',
+                    onClick: () => setActiveTab('staff')
+                  },
+                  {
+                    id: 'manage-tables',
+                    title: 'Manage Tables',
+                    description: 'Configure table settings',
+                    icon: TableCellsIcon,
+                    cardGradient: 'from-emerald-50 to-teal-50',
+                    iconClass: 'text-emerald-500',
+                    onClick: () => setActiveTab('tables')
+                  },
+                  {
+                    id: 'update-menu',
+                    title: 'Update Menu',
+                    description: 'Add or modify menu items',
+                    icon: ClipboardDocumentListIcon,
+                    cardGradient: 'from-purple-50 to-pink-50',
+                    iconClass: 'text-violet-500',
+                    onClick: () => setActiveTab('menu')
+                  },
+                  {
+                    id: 'view-orders',
+                    title: 'View Orders',
+                    description: 'Monitor kitchen orders',
+                    icon: FireIcon,
+                    cardGradient: 'from-amber-50 to-yellow-50',
+                    iconClass: 'text-orange-500',
+                    onClick: () => setActiveTab('orders')
+                  }
+                ].map((action, index) => {
+                  const Icon = action.icon;
+                  return (
+                    <div
+                      key={action.id}
+                      className={`rounded-2xl p-5 md:p-6 bg-gradient-to-r ${action.cardGradient} border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 hover:scale-[1.01] cursor-pointer`}
+                      style={{ animationDelay: `${index * 100}ms` }}
+                      onClick={action.onClick}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white grid place-items-center ring-1 ring-slate-200">
+                          <Icon className={`w-6 h-6 md:w-7 md:h-7 ${action.iconClass}`} />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg md:text-xl font-semibold text-[#111827]">{action.title}</h3>
+                          <p className="text-sm md:text-[15px] text-[#6b7280] mt-0.5">{action.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>

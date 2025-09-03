@@ -582,7 +582,7 @@ export default function SuperAdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
                           <button
-                            onClick={() => setSelectedCafe(cafe)}
+                            onClick={() => handleOpenCafeDashboard(cafe)}
                             className="text-slate-500 hover:text-blue-600 p-1 rounded hover:bg-blue-50"
                             title="View Cafe Details"
                           >
