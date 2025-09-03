@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { connectDb } from '../../../server/db';
 import { User } from '../../../server/models';
-import { signAccessToken } from '../../../server/auth';
+import { signAccessToken, signRefreshToken, setRefreshCookie } from '../../../server/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const esc = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const ci = new RegExp(`^${esc}$`, 'i');
     const dbUser: any = await (User as any).findOne({ $or: [{ email: ci }, { username: ci }, { name: ci }] });
-    if (!dbUser) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!dbUser) return res.status(400).json({ code: 'USER_NOT_FOUND', message: 'Invalid username or email' });
 
     const bcrypt = await import('bcryptjs');
     let ok = false;
@@ -34,9 +34,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ok = true;
     }
 
-    if (!ok) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!ok) return res.status(400).json({ code: 'INVALID_PASSWORD', message: 'Invalid password' });
 
     const token = signAccessToken({ userId: dbUser._id, role: dbUser.role, name: dbUser.name, cafeId: dbUser.cafeId });
+    const refreshToken = signRefreshToken({ userId: dbUser._id, role: dbUser.role, name: dbUser.name, cafeId: dbUser.cafeId });
+    
+    // Set refresh token as HTTP-only cookie
+    setRefreshCookie(res, refreshToken);
 
     const safeUser = {
       _id: String(dbUser._id),

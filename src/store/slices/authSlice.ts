@@ -2,6 +2,85 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { Role } from '../../utils/roles';
 
+// Create axios instance with interceptors
+const api = axios.create({
+  baseURL: '/api',
+});
+
+// Add request interceptor to add auth token
+api.interceptors.request.use((config) => {
+  // Get token from localStorage if available
+  if (typeof window !== 'undefined') {
+    try {
+      const auth = localStorage.getItem('auth');
+      if (auth) {
+        const { token } = JSON.parse(auth);
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+          console.log('Axios interceptor - Added auth header:', `Bearer ${token.substring(0, 20)}...`);
+        } else {
+          console.log('Axios interceptor - No token found in auth data');
+        }
+      } else {
+        console.log('Axios interceptor - No auth data in localStorage');
+      }
+    } catch (error) {
+      console.error('Axios interceptor - Error parsing auth data:', error);
+    }
+  }
+  return config;
+});
+
+// Add response interceptor to handle token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If the error is 401 and we haven't already tried to refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        console.log('Token expired, attempting to refresh...');
+        const refreshResponse = await axios.post('/api/auth/refresh');
+        const { token } = refreshResponse.data;
+        
+        // Update token in localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            const auth = localStorage.getItem('auth');
+            if (auth) {
+              const authData = JSON.parse(auth);
+              authData.token = token;
+              localStorage.setItem('auth', JSON.stringify(authData));
+              console.log('Token refreshed and updated in localStorage');
+            }
+          } catch (e) {
+            console.error('Error updating token in localStorage:', e);
+          }
+        }
+        
+        // Update the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        
+        // Retry the original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        // If refresh fails, redirect to login
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth');
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 export interface User {
   _id: string;
   name: string;
@@ -62,16 +141,22 @@ const initialState: AuthState = {
 // Async thunks
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: { email: string; password: string }) => {
-    const response = await axios.post('/api/auth/login', credentials);
-    return response.data;
+  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/login', credentials);
+      return response.data;
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Login failed';
+      const code = err?.response?.data?.code;
+      return rejectWithValue({ message, code });
+    }
   }
 );
 
 export const registerSuperAdmin = createAsyncThunk(
   'auth/registerSuperAdmin',
   async (userData: { name: string; email: string; password: string }) => {
-    const response = await axios.post('/api/auth/register-super-admin', userData);
+    const response = await api.post('/auth/register-super-admin', userData);
     return response.data;
   }
 );
@@ -97,7 +182,11 @@ export const createCafe = createAsyncThunk(
       managerEnabled: boolean;
     };
   }) => {
-    const response = await axios.post('/api/cafes', cafeData);
+    console.log('createCafe - Starting cafe creation with data:', cafeData);
+    console.log('createCafe - Current axios default headers:', api.defaults.headers);
+    
+    const response = await api.post('/cafes', cafeData);
+    console.log('createCafe - Response received:', response.status);
     return response.data;
   }
 );
@@ -110,7 +199,7 @@ export const createCafeAdmin = createAsyncThunk(
     password: string;
     cafeId: string;
   }) => {
-    const response = await axios.post('/api/users', {
+    const response = await api.post('/users', {
       ...userData,
       role: 'CAFE_ADMIN'
     });
@@ -121,7 +210,7 @@ export const createCafeAdmin = createAsyncThunk(
 export const refreshAuth = createAsyncThunk(
   'auth/refresh',
   async () => {
-    const response = await axios.post('/api/auth/refresh');
+    const response = await api.post('/auth/refresh');
     return response.data;
   }
 );
@@ -129,7 +218,7 @@ export const refreshAuth = createAsyncThunk(
 export const logout = createAsyncThunk(
   'auth/logout',
   async () => {
-    await axios.post('/api/auth/logout');
+    await api.post('/auth/logout');
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('auth');
@@ -141,7 +230,7 @@ export const logout = createAsyncThunk(
 export const loadCafeData = createAsyncThunk(
   'auth/loadCafeData',
   async (cafeId: string) => {
-    const response = await axios.get(`/api/cafes/${cafeId}`);
+    const response = await api.get(`/cafes/${cafeId}`);
     return response.data;
   }
 );
@@ -155,6 +244,7 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       if (state.token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+        console.log('setAuth - Token set in axios defaults');
       }
     },
     setHydrated: (state, action: PayloadAction<boolean>) => {
@@ -164,6 +254,7 @@ const authSlice = createSlice({
       state.token = action.payload;
       if (state.token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+        console.log('setToken - Token set in axios defaults');
       }
     },
     clearError: (state) => {
@@ -194,16 +285,20 @@ const authSlice = createSlice({
         state.error = null;
         if (state.token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+          console.log('Login fulfilled - Token set in axios defaults');
         }
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('auth', JSON.stringify({ token: state.token, user: state.user }));
-          } catch {}
+            console.log('Login fulfilled - Token stored in localStorage');
+          } catch (error) {
+            console.error('Login fulfilled - Error storing in localStorage:', error);
+          }
         }
       })
-      .addCase(login.rejected, (state, action) => {
+      .addCase(login.rejected, (state, action: any) => {
         state.loading = false;
-        state.error = action.error.message || 'Login failed';
+        state.error = action.payload?.message || action.error.message || 'Login failed';
       })
       
       // Register Super Admin
@@ -256,10 +351,24 @@ const authSlice = createSlice({
       
       // Refresh Auth
       .addCase(refreshAuth.fulfilled, (state, action) => {
-        state.user = action.payload.user;
         state.token = action.payload.token;
         if (state.token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
+          console.log('Refresh auth fulfilled - Token updated in axios defaults');
+          
+          // Update localStorage with new token
+          if (typeof window !== 'undefined') {
+            try {
+              const auth = localStorage.getItem('auth');
+              if (auth) {
+                const authData = JSON.parse(auth);
+                authData.token = state.token;
+                localStorage.setItem('auth', JSON.stringify(authData));
+              }
+            } catch (error) {
+              console.error('Error updating token in localStorage after refresh:', error);
+            }
+          }
         }
       })
       
@@ -269,6 +378,7 @@ const authSlice = createSlice({
         state.cafe = null;
         state.token = null;
         delete axios.defaults.headers.common['Authorization'];
+        console.log('Logout fulfilled - Auth headers cleared');
       })
       
       // Load Cafe Data

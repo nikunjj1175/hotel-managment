@@ -9,11 +9,25 @@ import { HashtagIcon, LinkIcon, PlusIcon, ArrowPathIcon, EllipsisHorizontalIcon,
 interface Table { _id: string; tableNumber: number; slug: string; isActive: boolean }
 
 export default function AdminTablesPage() {
-  const { token, hydrated } = useAppSelector(s => s.auth);
+  const { token, hydrated, user } = useAppSelector(s => s.auth);
   const [tables, setTables] = useState<Table[]>([]);
-  const [form, setForm] = useState({ tableNumber: 0, slug: '' });
+  const [form, setForm] = useState({ tableNumber: 0, slug: '', cafeId: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const getAuthToken = () => {
+    if (token) return token;
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('auth');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return parsed?.token as string;
+        }
+      } catch {}
+    }
+    return undefined;
+  };
 
   useEffect(() => {
     if (hydrated && token) {
@@ -31,21 +45,14 @@ export default function AdminTablesPage() {
     try {
       setLoading(true);
       setError(null);
-      
-      // Mock data for now - replace with actual API call
-      const mockTables: Table[] = [
-        { _id: '1', tableNumber: 1, slug: 'table-1', isActive: true },
-        { _id: '2', tableNumber: 2, slug: 'table-2', isActive: true },
-        { _id: '3', tableNumber: 3, slug: 'table-3', isActive: false },
-        { _id: '4', tableNumber: 4, slug: 'table-4', isActive: true },
-        { _id: '5', tableNumber: 5, slug: 'table-5', isActive: true },
-        { _id: '6', tableNumber: 6, slug: 'table-6', isActive: true }
-      ];
-      
-      setTables(mockTables);
+      const bearer = getAuthToken();
+      const res = await axios.get('/api/tables', {
+        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined
+      });
+      setTables(res.data as Table[]);
     } catch (err: any) {
       console.error('Error loading tables:', err);
-      setError('Failed to load tables');
+      setError(err?.response?.data?.message || 'Failed to load tables');
     } finally {
       setLoading(false);
     }
@@ -59,20 +66,27 @@ export default function AdminTablesPage() {
 
     try {
       setError(null);
-      
-      // Mock creation - replace with actual API call
-      const newTable: Table = {
-        _id: Date.now().toString(),
+      const cafeIdFromUser = (user as any)?.cafeId as string | undefined;
+      const finalCafeId = form.cafeId?.trim() || cafeIdFromUser;
+      if (!finalCafeId) {
+        setError('Cafe ID is required to create a table');
+        return;
+      }
+      const payload = {
         tableNumber: form.tableNumber,
         slug: form.slug || `table-${form.tableNumber}`,
-        isActive: true
-      };
-      
-      setTables(prev => [...prev, newTable]);
-      setForm({ tableNumber: 0, slug: '' });
+        isActive: true,
+        cafeId: finalCafeId,
+      } as any;
+      const bearer = getAuthToken();
+      const res = await axios.post('/api/tables', payload, {
+        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined
+      });
+      setTables(prev => [...prev, res.data as Table]);
+      setForm({ tableNumber: 0, slug: '', cafeId: '' });
     } catch (err: any) {
       console.error('Error creating table:', err);
-      setError('Failed to create table');
+      setError(err?.response?.data?.message || 'Failed to create table');
     }
   };
 
@@ -113,6 +127,15 @@ export default function AdminTablesPage() {
                 <div className="relative">
                   <LinkIcon className="h-5 w-5 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
                   <input 
+                    placeholder="Cafe ID (required if not linked)" 
+                    value={form.cafeId} 
+                    onChange={e => setForm({ ...form, cafeId: e.target.value })} 
+                    className="pl-10 w-full px-4 py-3 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-500 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                  />
+                </div>
+                <div className="relative">
+                  <LinkIcon className="h-5 w-5 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                  <input 
                     placeholder="Slug (e.g. table-9)" 
                     value={form.slug} 
                     onChange={e => setForm({ ...form, slug: e.target.value })} 
@@ -125,7 +148,7 @@ export default function AdminTablesPage() {
                   className="w-full inline-flex items-center justify-center gap-2 rounded-lg py-3 px-4 text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[.99] font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   <PlusIcon className="h-5 w-5" />
-                  {loading ? 'Creating...' : '+ Create Table'}
+                  {loading ? 'Creating...' : 'Create Table'}
                 </button>
               </div>
             </div>
@@ -158,7 +181,7 @@ export default function AdminTablesPage() {
                   <p className="text-lg">No tables found. Create your first table above.</p>
                 </div>
               ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                   {tables.map(t => (
                     <div key={t._id} className="bg-white rounded-2xl shadow-md p-4 border border-gray-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex flex-col h-full">
                       {/* Header with title and status */}
@@ -177,26 +200,34 @@ export default function AdminTablesPage() {
                       {/* Slug */}
                       <p className="text-sm text-gray-500 mb-4">Slug: {t.slug}</p>
                       
-                      {/* QR Code Placeholder */}
+                      {/* QR Code */}
                       <div className="mb-4 flex justify-center">
-                        <div className="aspect-square w-32 h-32 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                          <QrCodeIcon className="h-16 w-16 text-gray-300" />
-                        </div>
+                        <img
+                          src={`/api/tables/${t._id}/qr`}
+                          alt={`QR for table ${t.tableNumber}`}
+                          className="w-32 h-32 rounded-lg border border-gray-200 bg-white"
+                        />
                       </div>
                       
-                      {/* Action Buttons */}
-                      <div className="mt-auto space-y-2">
-                        <Link 
-                          href={`/table/${t.slug}`} 
-                          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                        >
-                          <LinkIcon className="h-4 w-4" />
-                          Open Link
-                        </Link>
-                        <button className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
-                          <EllipsisHorizontalIcon className="h-5 w-5" />
-                          More Options
-                        </button>
+                      {/* Action Buttons - compact side-by-side */}
+                      <div className="mt-auto">
+                        <div className="flex gap-2">
+                          <Link 
+                            href={`/table/${t.slug}`} 
+                            className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                          >
+                            <LinkIcon className="h-4 w-4" />
+                            Open Link
+                          </Link>
+                          <a
+                            href={`/api/tables/${t._id}/qr`}
+                            download={`table-${t.tableNumber}-qr.png`}
+                            className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm text-center"
+                          >
+                            <EllipsisHorizontalIcon className="h-4 w-4" />
+                            Download QR
+                          </a>
+                        </div>
                       </div>
                     </div>
                   ))}

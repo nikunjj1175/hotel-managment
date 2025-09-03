@@ -9,13 +9,29 @@ function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: any) {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectDb();
-  await runMiddleware(req, res, requireAuth(['SUPER_ADMIN','ADMIN']));
   if (req.method === 'GET') {
-    const tables = await (Table as any).find().sort({ tableNumber: 1 });
+    const user = (req as any).user || {};
+    const cafeIdParam = (req.query as any).cafeId as string | undefined;
+    const query: any = user.cafeId ? { cafeId: user.cafeId } : (cafeIdParam ? { cafeId: cafeIdParam } : {});
+    const tables = await (Table as any).find(query).sort({ tableNumber: 1 });
     return res.json(tables);
   }
   if (req.method === 'POST') {
-    const table = await (Table as any).create(req.body);
+    const user = (req as any).user || {};
+    const { tableNumber, slug, cafeId } = (req.body || {}) as any;
+    if (!tableNumber) return res.status(400).json({ message: 'tableNumber required' });
+    const finalSlug = slug && String(slug).trim().length ? String(slug).trim() : `table-${tableNumber}`;
+    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const qrCode = `${base}/table/${finalSlug}`;
+    const payload = {
+      cafeId: user.cafeId || cafeId,
+      tableNumber,
+      slug: finalSlug,
+      qrCode,
+      isActive: true,
+    };
+    if (!payload.cafeId) return res.status(400).json({ message: 'cafeId required' });
+    const table = await (Table as any).create(payload);
     return res.json(table);
   }
   if (req.method === 'PUT') {

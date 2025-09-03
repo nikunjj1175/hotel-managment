@@ -33,7 +33,7 @@ function Boot() {
       } catch {}
     }
     
-    // background refresh access token every 25 minutes
+    // background refresh access token every 1.5 hours
     const interval = setInterval(async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -51,7 +51,7 @@ function Boot() {
           }
         }
       } catch {}
-    }, 25 * 60 * 1000);
+    }, 1.5 * 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
   return null;
